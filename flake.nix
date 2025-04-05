@@ -42,7 +42,7 @@
             postgresql
             perlPackages.TAPParserSourceHandlerpgTAP # pg_prove
           ];
-          PGDATA = "data/pg1";
+          PGDATA = "data/default";
           PGHOST = "localhost";
           PGDATABASE = "postgres";
         };
