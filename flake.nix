@@ -35,50 +35,52 @@
         pkgs,
         system,
         ...
-      }: {
-        devShells.default = pkgs.mkShell {
-          name = "pg_jsonpatch";
-          buildInputs = with pkgs; [
-            postgresql
-            perlPackages.TAPParserSourceHandlerpgTAP # pg_prove
-          ];
-          PGDATA = "data/default";
-          PGHOST = "localhost";
-          PGDATABASE = "postgres";
-        };
-
+      }: let
         packages = {
           default = pkgs.callPackage ./package.nix {inherit (pkgs) postgresql;};
-          v17 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_17;};
-          v16 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_16;};
-          v15 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_15;};
-          v14 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_14;};
+          postgresql_17 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_17;};
+          postgresql_16 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_16;};
+          postgresql_15 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_15;};
+          postgresql_14 = pkgs.callPackage ./package.nix {postgresql = pkgs.postgresql_14;};
         };
+      in {
+        devShells = builtins.mapAttrs (name: drv:
+          pkgs.mkShell {
+            name = "pg_jsonpatch";
+            buildInputs = [
+              drv.passthru.postgresql
+              pkgs.perlPackages.TAPParserSourceHandlerpgTAP # pg_prove
+            ];
+            PGDATA = "data/${name}";
+            PGHOST = "localhost";
+            PGDATABASE = "postgres";
+          })
+        packages;
 
-        process-compose.devenv = {
-          imports = [
-            inputs.services.processComposeModules.default
-          ];
+        inherit packages;
 
-          cli.options.no-server = false;
+        process-compose = lib.mapAttrs' (name: drv:
+          lib.nameValuePair "${name}-compose" {
+            imports = [
+              inputs.services.processComposeModules.default
+            ];
 
-          services.postgres.default = {
-            enable = true;
-            extensions = exts:
-              with exts; [
-                config.packages.default
-                pgtap
-              ];
-            initialScript.after = ''
-              create extension pgtap;
-            '';
-            package = config.packages.default.postgresql;
-            settings = {
-              log_statement = "all";
-              logging_collector = false;
+            cli.options.no-server = false;
+
+            services.postgres.${name} = {
+              enable = true;
+              extensions = exts: [drv exts.pgtap];
+              initialScript.after = ''
+                create extension pgtap;
+              '';
+              package = drv.passthru.postgresql;
+              settings = {
+                log_statement = "all";
+                logging_collector = false;
+              };
             };
-          };
-        };
+          })
+        packages;
       };
     };
 }

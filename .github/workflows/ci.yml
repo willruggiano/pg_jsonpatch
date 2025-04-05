@@ -6,16 +6,20 @@ on:
     branches:
       - main
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test:
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.pg }}-${{ github.ref }}
+      cancel-in-progress: true
     strategy:
       matrix:
         pg:
-          - v17
+          - default
+          - postgresql_17
+          - postgresql_16
+          - postgresql_15
+          - postgresql_14
     runs-on: namespace-profile-cached-amd64-lg
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +38,6 @@ jobs:
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
       - run: nix flake check
       - run: nix build .#${{ matrix.pg }}
-      - run: nix run .#devenv -- up -D
-      - run: nix develop -c pg_prove test.sql
-      - run: nix run .#devenv down
+      - run: nix run .#${{ matrix.pg }}-compose -- up -D && nix develop .#${{ matrix.pg }} -c ./.github/scripts/wait-for-postgres.sh
+      - run: nix develop .#${{ matrix.pg }} -c pg_prove test.sql
+      - run: nix run .#${{ matrix.pg }}-compose down

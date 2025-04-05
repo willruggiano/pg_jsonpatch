@@ -13,5 +13,6 @@ select jsonb_patch(
 (1 row)
 ```
 
-See [./test.sql] for more examples.
+Compatible (I think) with PostgreSQL 14+.
+See [./test.sql](./test.sql) for more examples.
 I have not yet written tests for A.11-A.15 from the RFC.
