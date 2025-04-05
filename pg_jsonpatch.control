@@ -1,0 +1,4 @@
+comment = 'PostgreSQL implementation of JSON Patch'
+default_version = '1.0.0'
+relocatable = false
+superuser = false
