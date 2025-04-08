@@ -90,7 +90,8 @@ select
 from (
   values
     ('{"op":"replace","path":"/a/b/c","value":42}'::jsonb),
-    ('{"op":"test","path":"/a/b/c","value":"C"}')
+    ('{"op":"test","path":"/a/b/c","value":"C"}'),
+    ('{"op":"add","path":"/a/b/d","value":"foo"}'::jsonb)
 ) as patches(patch);
 
 select plan(count(*)::int) from test_cases;
